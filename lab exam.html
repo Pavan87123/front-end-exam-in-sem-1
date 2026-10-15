@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Course Registration</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+header {
+  background: #1d4ed8;
+  color: white;
+  text-align: center;
+  padding: 25px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 25px auto;
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px #00000012;
+}
+
+h2 { color: #1d4ed8; }
+
+label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+button {
+  border: none;
+  padding: 11px 16px;
+  margin-top: 15px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover { background: #1e40af; }
+
+.delete { background: #dc2626; }
+
+.table-wrapper { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+th, td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px;
+  text-align: left;
+}
+
+th { background: #eff6ff; }
+
+#message { font-weight: bold; }
+
+footer {
+  text-align: center;
+  padding: 15px;
+  color: #64748b;
+}
+
+@media(max-width: 600px) {
+  header h1 { font-size: 23px; }
+  .card { padding: 16px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Student Course Registration</h1>
+  <p>Register for your preferred courses</p>
+</header>
+
+<main class="container">
+
+<section class="card">
+  <h2>Student Registration Form</h2>
+
+  <form id="registrationForm">
+    <label for="name">Full Name</label>
+    <input id="name" required placeholder="Enter full name">
+
+    <label for="studentId">Student ID</label>
+    <input id="studentId" required placeholder="Enter student ID">
+
+    <label for="email">Email Address</label>
+    <input id="email" type="email" required placeholder="Enter email">
+
+    <label for="department">Department</label>
+    <select id="department" required>
+      <option value="">Select Department</option>
+      <option>CSE</option>
+      <option>ECE</option>
+      <option>EEE</option>
+      <option>Mechanical</option>
+      <option>Civil</option>
+    </select>
+
+    <label for="course">Select Course</label>
+    <select id="course" required>
+      <option value="">Choose a course</option>
+      <option value="Web Development|4">Web Development - 4 Credits</option>
+      <option value="Python Programming|3">Python Programming - 3 Credits</option>
+      <option value="Database Management|4">Database Management - 4 Credits</option>
+      <option value="Java Programming|3">Java Programming - 3 Credits</option>
+      <option value="Computer Networks|3">Computer Networks - 3 Credits</option>
+    </select>
+
+    <p id="credits">Course credits: 0</p>
+    <button type="submit">Register Course</button>
+    <p id="message" role="status"></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Registered Students</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Student ID</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Course</th>
+          <th>Credits</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="studentList"></tbody>
+    </table>
+  </div>
+
+  <p id="empty">No registrations yet.</p>
+  <h3 id="total">Total registrations: 0</h3>
+</section>
+
+</main>
+
+<footer>
+  Student Course Registration System | HTML, CSS & JavaScript
+</footer>
+
+<script>
+const form = document.getElementById("registrationForm");
+const course = document.getElementById("course");
+const message = document.getElementById("message");
+const studentList = document.getElementById("studentList");
+
+let students = [];
+
+try {
+  const saved = JSON.parse(
+    localStorage.getItem("studentRegistrations") || "[]"
+  );
+  if (Array.isArray(saved)) students = saved;
+} catch {
+  students = [];
+}
+
+course.addEventListener("change", () => {
+  const selected = course.value.split("|");
+  document.getElementById("credits").textContent =
+    "Course credits: " + (selected[1] || 0);
+});
+
+function showMessage(text, success) {
+  message.textContent = text;
+  message.style.color = success ? "green" : "red";
+}
+
+function saveData() {
+  try {
+    localStorage.setItem("studentRegistrations", JSON.stringify(students));
+    return true;
+  } catch {
+    showMessage("Unable to save data in browser storage.", false);
+    return false;
+  }
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+
+  const name = document.getElementById("name").value.trim();
+  const studentId = document.getElementById("studentId").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const department = document.getElementById("department").value;
+  const selected = course.value.split("|");
+  const courseName = selected[0];
+  const credits = Number(selected[1]);
+
+  if (!name || !studentId || !email || !department || !courseName) {
+    showMessage("Please fill in all fields.", false);
+    return;
+  }
+
+  const duplicate = students.some(student =>
+    student.studentId.toLowerCase() === studentId.toLowerCase() &&
+    student.course === courseName
+  );
+
+  if (duplicate) {
+    showMessage("Student is already registered for this course.", false);
+    return;
+  }
+
+  students.push({
+    id: Date.now().toString() + Math.random().toString(36).slice(2),
+    name, studentId, email, department,
+    course: courseName, credits
+  });
+
+  if (!saveData()) {
+    students.pop();
+    return;
+  }
+
+  renderStudents();
+  form.reset();
+  document.getElementById("credits").textContent = "Course credits: 0";
+  showMessage("Registration successful!", true);
+});
+
+function renderStudents() {
+  studentList.replaceChildren();
+
+  students.forEach(student => {
+    const row = document.createElement("tr");
+
+    [
+      student.name,
+      student.studentId,
+      student.email,
+      student.department,
+      student.course,
+      student.credits
+    ].forEach(value => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+
+    const actionCell = document.createElement("td");
+    const button = document.createElement("button");
+
+    button.textContent = "Remove";
+    button.className = "delete";
+    button.type = "button";
+
+    button.addEventListener("click", () => {
+      const previous = students;
+      students = students.filter(item => item.id !== student.id);
+
+      if (!saveData()) {
+        students = previous;
+        return;
+      }
+
+      renderStudents();
+      showMessage("Registration removed.", true);
+    });
+
+    actionCell.appendChild(button);
+    row.appendChild(actionCell);
+    studentList.appendChild(row);
+  });
+
+  document.getElementById("empty").hidden = students.length > 0;
+  document.getElementById("total").textContent =
+    "Total registrations: " + students.length;
+}
+
+renderStudents();
+</script>
+
+</body>
+</html>
